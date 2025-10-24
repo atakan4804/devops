@@ -101,6 +101,16 @@ jobs:
           docker image rm my-documentation || true
           docker build -f Dockerfile.nginx -t my-documentation .
           docker image ls --all
+          
+
+      - name: Tag and push Documentation image to registry
+        run: |
+          REG="10.0.40.193:5000"
+          DOC_IMAGE_LOCAL="my-documentation"
+          DOC_IMAGE_REMOTE="$REG/team9-docs:latest"
+          docker tag "$DOC_IMAGE_LOCAL" "$DOC_IMAGE_REMOTE"
+          docker push "$DOC_IMAGE_REMOTE"
+          
 
       - name: Run the documentation container
         run: |
