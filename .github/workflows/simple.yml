@@ -99,11 +99,13 @@ jobs:
 
       - name: Generate PDF documentation with Pandoc
         run: |
-            docker run --rm \
-              -v "${PWD}/docs:/data" \
-              -w /data \
-              pandoc/latex \
-              -s build/site/index.html -o build/site/DevOps_Lecture7_Documentation.pdf
+          docker run --rm \
+            -v "${PWD}/docs:/data" \
+            -w /data \
+            pandoc/latex \
+            -s *.md -o build/site/DevOps_Lecture7_Documentation.pdf \
+            --metadata title="DevOps Lectures Documentation" \
+            --toc
 
       - name: Create the documentation container
         run: |
