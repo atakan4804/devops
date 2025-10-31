@@ -1,4 +1,4 @@
-name: CI + Deploy + Integration Test + SonarQube + Docs
+name: DevOps Pipeline
 
 on:
   push:
@@ -95,7 +95,6 @@ jobs:
             -v "${PWD}/docs:/docs" \
             -w /docs \
             squidfunk/mkdocs-material build -d build/site
-          
 
       - name: Generate PDF documentation with Pandoc
         run: |
@@ -103,8 +102,8 @@ jobs:
             -v "${PWD}/docs:/data" \
             -w /data/content \
             pandoc/latex \
-            -s index.md 01_LECTURE.md 02_LECTURE.md 03_LECTURE.md 04_LECTURE.md 05_LECTURE.md 06_LECTURE.md \
-            -o ../build/site/DevOps_Lecture7_Documentation.pdf \
+            -s index.md 01_LECTURE.md 02_LECTURE.md 03_LECTURE.md 04_LECTURE.md 05_LECTURE.md 06_LECTURE.md 07_LECTURE.md 08_LECTURE.md \
+            -o ../build/site/documentation.pdf \
             --metadata title="DevOps Lectures Documentation" \
             --toc
 
@@ -135,8 +134,6 @@ jobs:
           chmod +x ci/doc-integration-test.sh
           ./ci/doc-integration-test.sh
           
-          
-          
       - name: SSH connection test (print date)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -144,14 +141,12 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > key.pem
           chmod 600 key.pem
 
-          # Host-Key holen (damit kein yes/no Prompt kommt)
           ssh-keyscan -H 10.0.40.194 > known_hosts
 
-          # Verbindung testen und Datum ausgeben  
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 "date"
 
 
-      - name: 🚀 Deploy containers to production (Team 9)
+      - name: Deploy containers to production (Team 9)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
@@ -159,7 +154,6 @@ jobs:
           chmod 600 key.pem
           ssh-keyscan -H 10.0.40.194 > known_hosts
 
-          # --- Alte Container stoppen und löschen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             docker stop devops-app-team9 || true &&
             docker rm devops-app-team9 || true &&
@@ -167,19 +161,16 @@ jobs:
             docker rm mydoc || true
           '
 
-          # --- Alte Images löschen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             docker image prune -f
           '
 
-          # --- Neue Images von Registry pullen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             REG="10.0.40.193:5000"
             docker pull $REG/devops-app-team9:latest
             docker pull $REG/team9-docs:latest
           '
 
-          # --- Container starten ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             REG="10.0.40.193:5000"
             docker run -d --restart always --name devops-app-team9 -p 1891:8080 $REG/devops-app-team9:latest &&
