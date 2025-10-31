@@ -14,7 +14,6 @@ jobs:
           echo "Fixing leftover root-owned files..."
           docker run --rm -v "${PWD}":/project bash:latest bash -c "chown -R $(id -u):$(id -g) /project || true"
 
-      # --- Checkout & Setup ---
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -24,7 +23,6 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      # --- Build, Test & Coverage ---
       - name: Build with Gradle (incl. JaCoCo)
         run: ./gradlew clean test jacocoTestReport bootJar
 
@@ -33,7 +31,6 @@ jobs:
           mkdir -p src/coverage
           cp build/reports/jacoco/test/jacocoTestReport.xml src/coverage/
 
-      # --- SonarQube Analysis ---
       - name: Run SonarQube analysis
         run: |
           docker run --rm \
@@ -46,7 +43,6 @@ jobs:
             -Dsonar.java.binaries=. \
             -Dsonar.coverage.jacoco.xmlReportPaths=coverage/jacocoTestReport.xml
 
-      # --- Build & Deploy App ---
       - name: Build Docker image (tag with commit SHA, plus latest)
         run: |
           IMAGE_TAG="devops-app-team9:${{ github.sha }}"
@@ -64,13 +60,11 @@ jobs:
             --restart unless-stopped \
             -p 8080:8080 devops-app-team9:latest
 
-      # --- Integration Test ---
       - name: Wait & Run integration tests
         run: |
           chmod +x ci/integration-test.sh
           ./ci/integration-test.sh
 
-      # --- Push App image to Registry ---
       - name: Tag and push App image to registry
         run: |
           REG="10.0.40.193:5000"
@@ -81,7 +75,6 @@ jobs:
           docker tag devops-app-team9:latest "$REG/devops-app-team9:latest"
           docker push "$REG/devops-app-team9:latest"
 
-      # --- Documentation Build & Container ---
       - name: Set file and folder permissions to local user
         run: |
           echo "Setting file and folder permissions in case something with user and group root was created in a previous run."
@@ -112,7 +105,6 @@ jobs:
           docker image rm my-documentation || true
           docker build -f Dockerfile.nginx -t my-documentation .
           docker image ls --all
-          
 
       - name: Tag and push Documentation image to registry
         run: |
@@ -121,7 +113,6 @@ jobs:
           DOC_IMAGE_REMOTE="$REG/team9-docs:latest"
           docker tag "$DOC_IMAGE_LOCAL" "$DOC_IMAGE_REMOTE"
           docker push "$DOC_IMAGE_REMOTE"
-          
 
       - name: Run the documentation container
         run: |
@@ -145,8 +136,7 @@ jobs:
 
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 "date"
 
-
-      - name: Deploy containers to production (Team 9)
+      - name: Deploy containers to production
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |

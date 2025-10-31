@@ -11,7 +11,7 @@
 - MkDocs builds HTML site in `docs/build/site`
 - Pandoc converts the documentation to PDF and saves it in the same folder:
   ```
-  docs/build/site/DevOps_Lecture7_Documentation.pdf
+  docs/build/site/documentation.pdf
   ```
 
 ---
@@ -33,4 +33,4 @@
 ---
 
 ### Result
-**Lecture 7:** The documentation site now includes a downloadable PDF version (`DevOps_Lecture7_Documentation.pdf`), built automatically in the pipeline and served by the Nginx container.
+**Lecture 7:** The documentation site now includes a downloadable PDF version (`documentation.pdf`), built automatically in the pipeline and served by the Nginx container.
