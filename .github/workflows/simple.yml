@@ -134,3 +134,18 @@ jobs:
         run: |
           chmod +x ci/doc-integration-test.sh
           ./ci/doc-integration-test.sh
+          
+          
+          
+      - name: 🔐 SSH connection test (print date)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > key.pem
+          chmod 600 key.pem
+
+          # Host-Key holen (damit kein yes/no Prompt kommt)
+          ssh-keyscan -H 10.0.40.194 > known_hosts
+
+          # Verbindung testen und Datum ausgeben
+          ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 "date"
