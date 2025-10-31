@@ -151,14 +151,14 @@ jobs:
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 "date"
 
 
-      - name: Deploy containers to production
+      - name: 🚀 Deploy containers to production (Team 9)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           echo "$SSH_PRIVATE_KEY" > key.pem
           chmod 600 key.pem
           ssh-keyscan -H 10.0.40.194 > known_hosts
-          
+
           # --- Alte Container stoppen und löschen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             docker stop devops-app-team9 || true &&
@@ -166,14 +166,22 @@ jobs:
             docker stop mydoc || true &&
             docker rm mydoc || true
           '
-          
+
           # --- Alte Images löschen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
             docker image prune -f
           '
-          
-          # --- Neue Container starten ---
+
+          # --- Neue Images von Registry pullen ---
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
-            docker run -d --restart always --name devops-app-team9 -p 1891:8080 devops-app-team9:latest &&
-            docker run -d --restart always --name mydoc -p 1892:80 my-documentation
+            REG="10.0.40.193:5000"
+            docker pull $REG/devops-app-team9:latest
+            docker pull $REG/team9-docs:latest
+          '
+
+          # --- Container starten ---
+          ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
+            REG="10.0.40.193:5000"
+            docker run -d --restart always --name devops-app-team9 -p 1891:8080 $REG/devops-app-team9:latest &&
+            docker run -d --restart always --name mydoc -p 1892:80 $REG/team9-docs:latest
           '
