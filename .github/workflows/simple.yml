@@ -137,7 +137,7 @@ jobs:
           
           
           
-      - name: 🔐 SSH connection test (print date)
+      - name: SSH connection test (print date)
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
@@ -147,5 +147,33 @@ jobs:
           # Host-Key holen (damit kein yes/no Prompt kommt)
           ssh-keyscan -H 10.0.40.194 > known_hosts
 
-          # Verbindung testen und Datum ausgeben
+          # Verbindung testen und Datum ausgeben  
           ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 "date"
+
+
+      - name: Deploy containers to production
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          echo "$SSH_PRIVATE_KEY" > key.pem
+          chmod 600 key.pem
+          ssh-keyscan -H 10.0.40.194 > known_hosts
+          
+          # --- Alte Container stoppen und löschen ---
+          ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
+            docker stop devops-app-team9 || true &&
+            docker rm devops-app-team9 || true &&
+            docker stop mydoc || true &&
+            docker rm mydoc || true
+          '
+          
+          # --- Alte Images löschen ---
+          ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
+            docker image prune -f
+          '
+          
+          # --- Neue Container starten ---
+          ssh -i key.pem -o UserKnownHostsFile=known_hosts svcgithub@10.0.40.194 '
+            docker run -d --restart always --name devops-app-team9 -p 1891:8080 devops-app-team9:latest &&
+            docker run -d --restart always --name mydoc -p 1892:80 my-documentation
+          '
